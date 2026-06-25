@@ -1,0 +1,17 @@
+[
+    {
+        "id": 1,
+        "query": "Que es Retrieval-Augmented Generation",
+        "expected_answer": "Tecnica avanzada de NLP que combina recuperación de información y generación de lenguaje natural"
+    },
+    {
+        "id": 2,
+        "query": "Que son los chunks en un proceso RAG",
+        "expected_answer": "Los chunks son segmentos de texto que se generan al dividir un documento para su procesamiento en un sistema RAG"
+    },
+    {
+        "id": 3,
+        "query": "Que funcion cumplen los embeddings",
+        "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante"
+    }
+]

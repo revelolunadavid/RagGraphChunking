@@ -1,6 +1,11 @@
+import time
+
 from chunking.fixed_chunking import FixedChunking
 from embeddings.embedding_model import EmbeddingModel
 from retrieval.vector_store import VectorStore
+from util.document_loader import DocumentLoader
+from util.save_experiment_result import save_experiment_result
+from util.query_loader import load_queries
 
 
 TEXT = """
@@ -23,16 +28,33 @@ def main():
     print("\n===== ORIGINAL TEXT =====\n")
     print(TEXT)
 
+    pdf_path = "doc.pdf" 
+    
+    # 2. Carga dinámica del texto (reemplaza el TEXT quemado en code.txt)
+    loader = DocumentLoader()
+    document_text = loader.load_pdf(pdf_path)
+
+    print(document_text)
     # -----------------------------------
     # Chunking
     # -----------------------------------
 
-    chunker = FixedChunking(
-        chunk_size=20,
-        overlap=5
-    )
+    presupuestos_L = 50
+    solapamiento = 10 
 
-    chunks = chunker.split_text(TEXT)
+    if(solapamiento >= presupuestos_L):
+        raise ValueError("El solapamiento debe ser menor que el tamaño del chunk (L).")
+    
+    # -----------------------------------
+    # Chunking
+    # -----------------------------------
+    
+    print("Iniciando recolección de datos automática...")
+    
+    # A. Segmentación (Pipeline del code.txt [4])
+    chunker = FixedChunking(chunk_size=presupuestos_L, overlap=solapamiento)
+
+    chunks = chunker.split_text(document_text)
 
     print("\n===== CHUNKS =====\n")
 
@@ -47,11 +69,23 @@ def main():
     # -----------------------------------
 
     embedding_model = EmbeddingModel()
-
     embeddings = embedding_model.encode(chunks)
 
     print("\nEmbeddings shape:")
     print(embeddings.shape)
+    
+    # -----------------------------------
+    # Query
+    # -----------------------------------
+    
+    # Cargar queries desde archivo JSON
+    queries = load_queries()
+    
+    if not queries:
+        print("No se cargaron queries. Verifica el archivo queries.json")
+        return
+    
+    print(f"\nCargadas {len(queries)} queries para procesar...\n")
 
     # -----------------------------------
     # Vector Store
@@ -66,32 +100,51 @@ def main():
         chunks
     )
 
-    # -----------------------------------
-    # Query
-    # -----------------------------------
-
-    query = "What improves retrieval quality?"
-
-    print("\n===== QUERY =====\n")
-    print(query)
-
-    query_embedding = embedding_model.encode(
-        [query]
-    )[0]
-
-    results = vector_store.search(
-        query_embedding,
-        k=2
-    )
-
-    print("\n===== RESULTS =====\n")
-
-    for i, result in enumerate(results):
-        print("result: ", i)
-        print(result["text"])
-        print(f"Distance: {result['distance']}")
+    # Procesar cada query
+    for query_data in queries:
+        query_id = query_data['id']
+        query = query_data['query']
+        expected_answer = query_data.get('expected_answer', '')
         
+        print(f"\n===== QUERY {query_id} =====")
+        print(f"Pregunta: {query}\n")
 
+        # Inicio del cronómetro para medir el trade-off de costo [3]
+        start_time = time.time()
+        
+        query_embedding = embedding_model.encode([query])[0]
+        
+        results = vector_store.search(
+            query_embedding,
+            k=2
+        )
+
+        best_distance = results[0]['distance'] if results else None
+        best_response = results[0]['text'] if results else None
+
+        print("best distance ", best_distance)
+        print("best response ", best_response)
+
+        tiempo_total = time.time() - start_time
+        
+        # Preparación de la fila para el CSV
+        resultado = {
+            'metodo': 'FixedChunking',
+            'chunk_size_L': presupuestos_L,
+            'overlap': solapamiento,
+            'tiempo_procesamiento': round(tiempo_total, 4),
+            'total_chunks': len(chunks),
+            'doc_id': pdf_path,
+            'best_distance': best_distance,
+            'best_response': best_response,
+            'query_id': query_id,
+            'query_text': query,
+        }
+        
+        # Guardar en el archivo para análisis estadístico posterior [5]
+        save_experiment_result(resultado)
+        print(f"Experimento guardado para query_id={query_id}")
+    
 
 if __name__ == "__main__":
     main()
