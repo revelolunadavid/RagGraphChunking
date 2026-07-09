@@ -26,23 +26,23 @@ contextual coherence between sentences.
 def main():
 
     print("\n===== ORIGINAL TEXT =====\n")
-    print(TEXT)
+    # print(TEXT)
 
-    pdf_path = "doc.pdf" 
+    doc_path = "doc.docx" 
     
     # 2. Carga dinámica del texto (reemplaza el TEXT quemado en code.txt)
     loader = DocumentLoader()
-    document_text = loader.load_pdf(pdf_path)
+    document_text = loader.load_document(doc_path)
 
     print(document_text)
     # -----------------------------------
     # Chunking
     # -----------------------------------
 
-    presupuestos_L = 50
-    solapamiento = 10 
+    chunk_size = 100
+    solapamiento = 15
 
-    if(solapamiento >= presupuestos_L):
+    if(solapamiento >= chunk_size):
         raise ValueError("El solapamiento debe ser menor que el tamaño del chunk (L).")
     
     # -----------------------------------
@@ -52,7 +52,7 @@ def main():
     print("Iniciando recolección de datos automática...")
     
     # A. Segmentación (Pipeline del code.txt [4])
-    chunker = FixedChunking(chunk_size=presupuestos_L, overlap=solapamiento)
+    chunker = FixedChunking(chunk_size=chunk_size, overlap=solapamiento)
 
     chunks = chunker.split_text(document_text)
 
@@ -116,11 +116,15 @@ def main():
         
         results = vector_store.search(
             query_embedding,
-            k=2
+            k=5
         )
 
         best_distance = results[0]['distance'] if results else None
         best_response = results[0]['text'] if results else None
+
+        for result in results:
+            print(f"Chunk: {result['text']}")
+            print(f"Distance: {result['distance']}\n")
 
         print("best distance ", best_distance)
         print("best response ", best_response)
@@ -130,11 +134,11 @@ def main():
         # Preparación de la fila para el CSV
         resultado = {
             'metodo': 'FixedChunking',
-            'chunk_size_L': presupuestos_L,
+            'chunk_size_L': chunk_size,
             'overlap': solapamiento,
             'tiempo_procesamiento': round(tiempo_total, 4),
             'total_chunks': len(chunks),
-            'doc_id': pdf_path,
+            'doc_id': doc_path,
             'best_distance': best_distance,
             'best_response': best_response,
             'query_id': query_id,
