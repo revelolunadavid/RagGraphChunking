@@ -13,5 +13,11 @@
         "id": 3,
         "query": "Que funcion cumplen los embeddings",
         "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante"
+    },
+    {
+        "id": 4,
+        "query": "Que funcion cumplen los embeddings",
+        "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante"
     }
+    
 ]
