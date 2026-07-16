@@ -1,32 +1,16 @@
 import time
+import re
 
 from chunking.fixed_chunking import FixedChunking
 from embeddings.embedding_model import EmbeddingModel
+from metrics.semantic import compute_retrieval_precision_recall, compute_semantic_precision_recall
 from retrieval.vector_store import VectorStore
 from util.document_loader import DocumentLoader
 from util.save_experiment_result import save_experiment_result
 from util.query_loader import load_queries
-
-
-TEXT = """
-Retrieval-Augmented Generation (RAG)
-improves large language models by retrieving
-external information before generating responses.
-
-Chunking strategies strongly affect retrieval
-quality because the retrieval system only
-searches over the generated chunks.
-
-Fixed chunking is simple but ignores semantic
-structure. Semantic chunking attempts to preserve
-contextual coherence between sentences.
-"""
-
+from llm import ask_from_chunks
 
 def main():
-
-    print("\n===== ORIGINAL TEXT =====\n")
-    # print(TEXT)
 
     doc_path = "doc.docx" 
     
@@ -34,7 +18,7 @@ def main():
     loader = DocumentLoader()
     document_text = loader.load_document(doc_path)
 
-    print(document_text)
+    #print(document_text)
     # -----------------------------------
     # Chunking
     # -----------------------------------
@@ -105,7 +89,8 @@ def main():
         query_id = query_data['id']
         query = query_data['query']
         expected_answer = query_data.get('expected_answer', '')
-        
+        ground_truth_context = query_data.get("ground_truth_context", [])
+
         print(f"\n===== QUERY {query_id} =====")
         print(f"Pregunta: {query}\n")
 
@@ -129,6 +114,39 @@ def main():
         print("best distance ", best_distance)
         print("best response ", best_response)
 
+        # Llamada al LLM usando los chunks recuperados (solo se pasa el texto de los chunks)
+        retrieved_chunks = [r["text"] for r in results]
+
+        try:
+            retrieval_precision, retrieval_recall = compute_retrieval_precision_recall(
+                    retrieved_chunks=retrieved_chunks,
+                    ground_truth_context=ground_truth_context,
+                    embedder=embedding_model,
+                    threshold=0.80
+                )
+        except Exception as e:
+            print(f"Error Retrieval Metrics: {e}")
+            retrieval_precision, retrieval_recall = 0.0, 0.0
+
+        try:
+            llm_answer = ask_from_chunks(retrieved_chunks, query)
+        except Exception as e:
+            llm_answer = f"ERROR_LLM: {e}"
+
+        print("LLM answer:", llm_answer)
+
+        # Calcular métricas semánticas usando embeddings token-level
+        try:
+            semantic_precision, semantic_recall = compute_semantic_precision_recall(
+                    llm_answer,
+                    expected_answer,
+                    embedding_model,
+                    threshold=0.72
+                )
+        except Exception as e:
+            print(f"Error Semantic Metrics: {e}")
+            semantic_precision, semantic_recall = 0.0, 0.0
+
         tiempo_total = time.time() - start_time
         
         # Preparación de la fila para el CSV
@@ -141,6 +159,12 @@ def main():
             'doc_id': doc_path,
             'best_distance': best_distance,
             'best_response': best_response,
+            'llm_answer': llm_answer,
+            'retrieval_precision': retrieval_precision,
+            'retrieval_recall': retrieval_recall,
+            'semantic_precision': semantic_precision,
+            'semantic_recall': semantic_recall,
+            'expected_answer': expected_answer,
             'query_id': query_id,
             'query_text': query,
         }

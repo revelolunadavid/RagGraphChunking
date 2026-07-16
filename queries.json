@@ -2,22 +2,33 @@
     {
         "id": 1,
         "query": "Que es Retrieval-Augmented Generation",
-        "expected_answer": "Tecnica avanzada de NLP que combina recuperación de información y generación de lenguaje natural"
+        "expected_answer": "Tecnica avanzada de NLP que combina recuperación de información y generación de lenguaje natural",
+        "ground_truth_context": [
+            "Retrieval-Augmented Generation (RAG) es una técnica que combina recuperación de información con generación de lenguaje natural."
+        ]
     },
     {
         "id": 2,
         "query": "Que son los chunks en un proceso RAG",
-        "expected_answer": "Los chunks son segmentos de texto que se generan al dividir un documento para su procesamiento en un sistema RAG"
+        "expected_answer": "Los chunks son segmentos de texto que se generan al dividir un documento para su procesamiento en un sistema RAG",
+        "ground_truth_context": [
+            "Los chunks son segmentos de texto obtenidos al dividir un documento para facilitar su indexación y recuperación en un sistema RAG."
+        ]
     },
     {
         "id": 3,
         "query": "Que funcion cumplen los embeddings",
-        "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante"
+        "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante",
+        "ground_truth_context": [
+            "Los embeddings representan cada chunk como un vector numérico que permite medir la similitud semántica entre consultas y documentos."
+        ]
     },
     {
         "id": 4,
-        "query": "Que funcion cumplen los embeddings",
-        "expected_answer": "Los embeddings representan los chunks en un espacio numerico vectorial, permitiendo comparar y recuperar información relevante"
+        "query": "Como influye el chunking en un sistema RAG",
+        "expected_answer": "La estrategia de chunking influye directamente en la calidad de la recuperación porque determina cómo se divide e indexa la información.",
+        "ground_truth_context": [
+            "Las estrategias de chunking afectan la calidad de la recuperación porque el sistema únicamente busca sobre los chunks generados."
+        ]
     }
-    
 ]
